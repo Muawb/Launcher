@@ -7,24 +7,28 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Properties;
 import java.util.Random;
+
+import static com.sun.java.accessibility.util.AWTEventMonitor.addActionListener;
 
 public class LauncherFrame extends JFrame {
 
     public static JFrame frame;
+    public static Properties saveName = null;
+    public static JTextField name;
+    public static ImageIcon image;
+
     private static BufferedInputStream input;
     private static JProgressBar upload;
     private static JLabel updText;
-    public static JTextField name;
     private static FileOutputStream output;
     private static MCLauncher mineStart;
     private static File client = null;
+
 
     public void frame() {
         frame = new JFrame();
@@ -68,25 +72,41 @@ public class LauncherFrame extends JFrame {
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(5,0,0,0), 0,0));
 
-        final JButton start = new JButton("Играть");
+        image = new ImageIcon(this.getClass().getResource("/settings.png"));
+        JButton settings = new JButton();
+        settings.setPreferredSize(new Dimension(40,40));
+        settings.setIcon(image);
+        panel.add(settings, new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.NORTH, GridBagConstraints.NONE,
+                new Insets(47,0,0,130), 0,0));
 
+        JButton start = new JButton("Играть");
         start.setPreferredSize(new Dimension(94, 35));
         panel.add(start, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.9,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(50, 13, 0, 0), 0, 0));
 
         name = new JTextField(8);
-
         name.setPreferredSize(new Dimension(25, 25));
         panel.add(name, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.9,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(18, 12, 0, 0), 0, 0));
 
         JLabel login = new JLabel("Логин: ");
-
         panel.add(login, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.9,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(21, 0, 0, 125), 0, 0));
+
+        try {
+            saveName = new Properties();
+            FileInputStream in = new FileInputStream(Utils.getWorkDir().getAbsolutePath() +
+                    File.separator + "settings.properties");
+            saveName.load(in);
+            name.setText(saveName.getProperty("name"));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         frame.setVisible(true);
 
         start.addActionListener(new ActionListener() {
@@ -101,13 +121,21 @@ public class LauncherFrame extends JFrame {
 
                 } else {
                     new Thread(() -> {
-                        start.setVisible(false);
-                        pane.setVisible(true);
-                        name.setVisible(false);
-                        login.setVisible(false);
-                        GuardUtils.chekFile(Utils.getWorkDir().toString() + File.separator + "bin" +
-                                        File.separator + "minecraft.jar" + File.separator,
-                                name.getText(), sessionUpdate());
+                        try {
+                            saveName.setProperty("name", name.getText());
+                            FileOutputStream out = new FileOutputStream(Utils.getWorkDir().getAbsolutePath() +
+                                    File.separator + "settings.properties");
+                            saveName.store(out, "Save name");
+                            start.setVisible(false);
+                            pane.setVisible(true);
+                            name.setVisible(false);
+                            login.setVisible(false);
+                            GuardUtils.chekFile(Utils.getWorkDir().toString() + File.separator + "bin" +
+                                            File.separator + "minecraft.jar" + File.separator,
+                                    name.getText(), sessionUpdate());
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
                     })
                     .start();
                 }
@@ -195,5 +223,6 @@ public class LauncherFrame extends JFrame {
                 e.printStackTrace();
             }
     }
+
 }
 
