@@ -2,7 +2,11 @@ package net.minecraft;
 
 import net.minecraft.settings.GuardUtils;
 import net.minecraft.settings.Utils;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.settings.file.Login;
+import net.minecraft.settings.file.Zipper;
+import net.minecraft.settings.user.SessionID;
+import org.apache.commons.io.IOUtils;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -10,25 +14,23 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.Random;
 
-import static com.sun.java.accessibility.util.AWTEventMonitor.addActionListener;
-
-public class LauncherFrame extends JFrame {
+public class LauncherFrame {
 
     public static JFrame frame;
-    public static Properties saveName = null;
-    public static JTextField name;
-    public static ImageIcon image;
-
+    public static JTextField name = new JTextField();
+    public static MCLauncher mineStart;
     private static BufferedInputStream input;
     private static JProgressBar upload;
     private static JLabel updText;
     private static FileOutputStream output;
-    private static MCLauncher mineStart;
-    private static File client = null;
-
+    private Properties saveName;
+    private ImageIcon image;
+    private static Path folder;
 
     public void frame() {
         frame = new JFrame();
@@ -38,7 +40,7 @@ public class LauncherFrame extends JFrame {
         Toolkit toolkit = Toolkit.getDefaultToolkit();
         Dimension dimension = toolkit.getScreenSize();
         frame.setBounds(dimension.width / 2 - 350, dimension.height / 2 - 200, 700, 400);
-        frame.setTitle("Launcher");
+        frame.setTitle("Main");
 
         LauncherComponent paint = new LauncherComponent();
         frame.setContentPane(paint);
@@ -97,18 +99,32 @@ public class LauncherFrame extends JFrame {
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(21, 0, 0, 125), 0, 0));
 
-        try {
-            saveName = new Properties();
-            FileInputStream in = new FileInputStream(Utils.getWorkDir().getAbsolutePath() +
-                    File.separator + "settings.properties");
-            saveName.load(in);
-            name.setText(saveName.getProperty("name"));
+        JButton exit = new JButton("Назад");
+        exit.setVisible(false);
+        panel.add(exit, new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.NORTH, GridBagConstraints.NONE,
+                new Insets(53,0,0,0), 0,0));
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        JCheckBox big = new JCheckBox();
+        big.setVisible(false);
+        panel.add(big, new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.NORTH, GridBagConstraints.NONE,
+                new Insets(30,85,0,0),0,0));
+
+        JLabel label_big = new JLabel("На весь экран:");
+        label_big.setVisible(false);
+        panel.add(label_big, new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.NORTH, GridBagConstraints.NONE,
+                new Insets(30,0,0,20),0,0));
+
+        JLabel label_settings = new JLabel("Настрйки");
+        label_settings.setVisible(false);
+        panel.add(label_settings, new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.NORTH, GridBagConstraints.NONE,
+                new Insets(0,0,0,0),0,0));
+
+        Login.saveName();
         frame.setVisible(true);
-
         start.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -118,44 +134,60 @@ public class LauncherFrame extends JFrame {
                             "Вы не ввели ник в игре !",
                             "Ошибка",
                             JOptionPane.WARNING_MESSAGE);
-
                 } else {
-                    new Thread(() -> {
-                        try {
-                            saveName.setProperty("name", name.getText());
-                            FileOutputStream out = new FileOutputStream(Utils.getWorkDir().getAbsolutePath() +
-                                    File.separator + "settings.properties");
-                            saveName.store(out, "Save name");
-                            start.setVisible(false);
-                            pane.setVisible(true);
-                            name.setVisible(false);
-                            login.setVisible(false);
-                            GuardUtils.chekFile(Utils.getWorkDir().toString() + File.separator + "bin" +
-                                            File.separator + "minecraft.jar" + File.separator,
-                                    name.getText(), sessionUpdate());
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        }
-                    })
-                    .start();
+                    Login.loadName();
+                    start.setVisible(false);
+                    pane.setVisible(true);
+                    name.setVisible(false);
+                    login.setVisible(false);
+                    GuardUtils.chekFile();
+                    settings.setVisible(false);
                 }
+            }
+        });
+        settings.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                name.setVisible(false);
+                start.setVisible(false);
+                login.setVisible(false);
+                exit.setVisible(true);
+                settings.setVisible(false);
+                big.setVisible(true);
+                label_big.setVisible(true);
+                label_settings.setVisible(true);
+            }
+        });
+        exit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                exit.setVisible(false);
+                name.setVisible(true);
+                start.setVisible(true);
+                login.setVisible(true);
+                exit.setVisible(false);
+                settings.setVisible(true);
+                big.setVisible(false);
+                label_big.setVisible(false);
+                label_settings.setVisible(false);
+            }
+        });
+        big.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MCLauncher.frame.setExtendedState(Frame.MAXIMIZED_BOTH);
             }
         });
     }
 
-    @NotNull
-    public static String sessionUpdate(){
-        Random r = new Random();
-        int x = r.nextInt(1000000000);
-        return String.valueOf(x);
-    }
 
     public static void getUpdate() {
         new Thread(() -> {
+            URLConnection connection = null;
             try {
                 updText.setText("Подключение к веб серверу...");
                 URL url = new URL("https://minecrafttest.ucoz.net/Download/client.zip");
-                URLConnection connection = url.openConnection();
+                connection = url.openConnection();
 
                 File client = new File(Utils.getWorkDir().getAbsolutePath()
                         + File.separator, "client.zip");
@@ -170,32 +202,30 @@ public class LauncherFrame extends JFrame {
 
                 byte[] buffer = new byte[1024];
                 int count = 0;
-
                 while ((count = input.read(buffer)) != -1) {
                     output.write(buffer, 0, count);
                     upload.setValue((int) client.length());
                     upload.setString("Скачано " + (int) client.length() / 1024 + " Кбайт из: " + (cll_web / 1024));
-
                 }
                 downloadNative();
-                output.close();
                 updText.setText("Распаковываем клиент");
 
-                new File(Utils.getWorkDir().getAbsolutePath() + File.separator + "bin").mkdir();
-                Utils.unZip(Utils.getWorkDir().toString() + File.separator + "client.zip",
-                        Utils.getWorkDir().toString() + File.separator + "bin" + File.separator);
+                folder = Files.createDirectory(Paths.get(
+                        Utils.getWorkDir().getAbsolutePath() + File.separator + "bin"));
+                Zipper.unZipBin();
 
-                new File(Utils.getWorkDir().toString() + File.separator + "bin" +  File.separator + "natives").mkdir();
-                Utils.unZipNatives(Utils.getWorkDir() + File.separator + "native.zip",
-                        Utils.getWorkDir().toString() + File.separator + "bin" + File.separator + "natives" + File.separator);
-
+                folder = Files.createDirectory(Paths.get(Utils.getWorkDir().getAbsolutePath() +
+                        File.separator + "bin" + File.separator + "natives"));
+                Zipper.unZipNatives();
                 updText.setText("Распаковка завершена");
                 upload.setString("Готово !");
-                mineStart = new MCLauncher(name.getText(), sessionUpdate());
+                mineStart = new MCLauncher(name.getText(), SessionID.sessionUpdate());
                 frame.setVisible(false);
-
             } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                IOUtils.closeQuietly(input);
+                IOUtils.closeQuietly(output);
             }
         })
          .start();
@@ -205,8 +235,7 @@ public class LauncherFrame extends JFrame {
             try {
                 URL url = new URL("https://minecrafttest.ucoz.net/Download/native.zip");
                 URLConnection connection = url.openConnection();
-
-                client = new File(Utils.getWorkDir().toString() + File.separator + "native.zip");
+                File client = new File(Utils.getWorkDir().toString() + File.separator + "native.zip");
 
                 BufferedInputStream input = new BufferedInputStream(connection.getInputStream());
                 FileOutputStream output = new FileOutputStream(client);
@@ -217,12 +246,12 @@ public class LauncherFrame extends JFrame {
                 while ((count = input.read(buffer)) != -1) {
                     output.write(buffer, 0, count);
                 }
-                output.close();
-
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                IOUtils.closeQuietly(input);
+                IOUtils.closeQuietly(output);
             }
     }
-
 }
 
