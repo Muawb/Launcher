@@ -1,5 +1,7 @@
 package net.minecraft.settings;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -8,8 +10,8 @@ public class Utils {
 
     private static File vorkDir = null;
     private static File wrkDir;
-    private static ZipEntry entry = null;
-    private static String name = null;
+    private static ZipEntry entry;
+    private static String name;
     private static long size = 0;
 
     public static File getWorkDir(){
@@ -58,61 +60,6 @@ public class Utils {
             return OS.solaris;
         } else {
             return OS.unknown;
-        }
-    }
-
-    public static void unZip(String arh, String outDir) {
-        try {
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(arh));
-
-            while ((entry = zis.getNextEntry()) != null){
-
-                size = entry.getSize();
-                name = entry.getName();
-
-                System.out.println("Получены файлы: " + name + ", размером - " + size + ";");
-
-                FileOutputStream out = new FileOutputStream(outDir + name);
-                byte[] buffer = new byte[4096];
-                int len;
-
-                while ((len = zis.read(buffer)) > 0){
-                    out.write(buffer, 0, len);
-                }
-                out.flush();
-                zis.closeEntry();
-                out.close();
-            }
-            new File(arh).delete();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void unZipNatives(String arh, String outDir){
-        try {
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(arh));
-
-            while ((entry = zis.getNextEntry()) != null){
-                name = entry.getName();
-                size = entry.getSize();
-
-                System.out.println("Получены файлы: " + name + ", размером - " + size);
-                FileOutputStream out = new FileOutputStream(outDir + name);
-                byte[] buffer = new byte[4096];
-                int len;
-
-                while ((len = zis.read(buffer)) > 0){
-                    out.write(buffer, 0, len);
-                }
-                out.flush();
-                zis.closeEntry();
-                out.close();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
