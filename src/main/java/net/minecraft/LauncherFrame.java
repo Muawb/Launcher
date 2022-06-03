@@ -31,6 +31,7 @@ public class LauncherFrame {
     private Properties saveName;
     private ImageIcon image;
     private static Path folder;
+    private static JButton settings;
 
     public void frame() {
         frame = new JFrame();
@@ -75,7 +76,8 @@ public class LauncherFrame {
                 new Insets(5,0,0,0), 0,0));
 
         image = new ImageIcon(this.getClass().getResource("/settings.png"));
-        JButton settings = new JButton();
+        settings = new JButton();
+        settings.setBackground(new Color(255,204,102));
         settings.setPreferredSize(new Dimension(40,40));
         settings.setIcon(image);
         panel.add(settings, new GridBagConstraints(0,0,1,1,1,1,
@@ -83,6 +85,7 @@ public class LauncherFrame {
                 new Insets(47,0,0,130), 0,0));
 
         JButton start = new JButton("Играть");
+        start.setBackground(new Color(255,204,102));
         start.setPreferredSize(new Dimension(94, 35));
         panel.add(start, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.9,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
@@ -100,6 +103,7 @@ public class LauncherFrame {
                 new Insets(21, 0, 0, 125), 0, 0));
 
         JButton exit = new JButton("Назад");
+        exit.setBackground(new Color(255,204,102));
         exit.setVisible(false);
         panel.add(exit, new GridBagConstraints(0,0,1,1,1,1,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
@@ -141,7 +145,6 @@ public class LauncherFrame {
                     name.setVisible(false);
                     login.setVisible(false);
                     GuardUtils.chekFile();
-                    settings.setVisible(false);
                 }
             }
         });
@@ -184,6 +187,7 @@ public class LauncherFrame {
     public static void getUpdate() {
         new Thread(() -> {
             URLConnection connection = null;
+            settings.setVisible(false);
             try {
                 updText.setText("Подключение к веб серверу...");
                 URL url = new URL("https://minecrafttest.ucoz.net/Download/client.zip");
