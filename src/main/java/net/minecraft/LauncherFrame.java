@@ -21,6 +21,7 @@ import java.util.Properties;
 
 public class LauncherFrame {
 
+    public String nickName;
     public static JFrame frame;
     public static JTextField name = new JTextField();
     public static MCLauncher mineStart;
@@ -126,8 +127,8 @@ public class LauncherFrame {
         panel.add(label_settings, new GridBagConstraints(0,0,1,1,1,1,
                 GridBagConstraints.NORTH, GridBagConstraints.NONE,
                 new Insets(0,0,0,0),0,0));
-
-        Login.saveName();
+        Login l = new Login();
+        l.update();
         frame.setVisible(true);
         start.addActionListener(new ActionListener() {
             @Override
@@ -139,7 +140,7 @@ public class LauncherFrame {
                             "Ошибка",
                             JOptionPane.WARNING_MESSAGE);
                 } else {
-                    Login.loadName();
+                    l.load();
                     start.setVisible(false);
                     pane.setVisible(true);
                     name.setVisible(false);

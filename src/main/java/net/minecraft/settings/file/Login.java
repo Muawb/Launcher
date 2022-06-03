@@ -1,37 +1,50 @@
 package net.minecraft.settings.file;
 
+import com.google.gson.Gson;
 import net.minecraft.LauncherFrame;
-import net.minecraft.settings.Utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.Properties;
+import net.minecraft.settings.Utils;
 
 public class Login {
 
-    private static Properties data;
+    private Gson gson;
+    private LauncherFrame lch;
 
-    public static void saveName() {
-        try {
-            data = new Properties();
-            FileInputStream in = new FileInputStream(Utils.getWorkDir().getAbsolutePath() +
-                    File.separator + "settings.properties");
-            data.load(in);
-            LauncherFrame.name.setText(data.getProperty("name"));
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
+    public void update() {
+        gson = new Gson();
 
-    public static void loadName(){
-        try {
-            data.setProperty("name", LauncherFrame.name.getText());
-            FileOutputStream out = new FileOutputStream(Utils.getWorkDir().getAbsolutePath() +
-                    File.separator + "settings.properties");
-            data.store(out, "Save name");
+        try (FileReader input = new FileReader((Utils.getWorkDir().getAbsolutePath() + "settings.properties"))) {
+            lch = gson.fromJson(input, LauncherFrame.class);
+            lch.name.setText(lch.nickName);
         } catch (Exception e){
-            e.printStackTrace();
+            System.out.println(e.getCause());
         }
     }
+
+    public void load(){
+        LauncherFrame lch = new LauncherFrame();
+        lch.nickName = lch.name.getText();
+        gson = new Gson();
+        try(FileWriter out = new FileWriter((Utils.getWorkDir().getAbsolutePath() + "settings.properties"))){
+            String str = gson.toJson(lch);
+            System.out.println(str);
+            out.write(str);
+            out.close();
+        } catch (Exception e){
+            System.out.println(e.getCause());
+        }
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
